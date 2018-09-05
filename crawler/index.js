@@ -5,9 +5,11 @@ const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
 const Media = require('./model/Media')
 const User = require('./model/User')
-const Image = require('./model/Image')
+// const Image = require('./model/Image')
+const Data = require('./model/Data')
 const urlParser = require('./urlParser')
 
+var end_cursor = null
 var parse = function (string) {
   var json = null
   try {
@@ -22,22 +24,31 @@ var parse = function (string) {
 var normalizeMedia = function (arr) {
   var list = []
   for (let origin of arr) {
-    let item = new Image(origin.node)
+    let item = new Data(origin.node)
     list.push(item)
   }
   return new Media(list)
 }
+
+//page end_cursor
+var nextPage = null
+
+
 
 exports.tag = function (tag, callback) {
   var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1'
   return axios.get(url)
   .then(function (res) {
     var json = res.data
-    var result = {
-      media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
-    }
+    if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page)
+      var nextPage = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
+      console.log(nextPage)
+      var result = {
+          media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
+      }
 
     callback(null, result)
+    // console.log(result)
   })
   .catch(function (err) {
     callback(new RequestError(err))
@@ -65,4 +76,4 @@ exports.tag = function (tag, callback) {
 // exports.Media = Media
 // exports.User = User
 
-exports.urlParser = urlParser
+// exports.urlParser = urlParser
