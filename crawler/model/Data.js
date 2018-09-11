@@ -20,8 +20,8 @@ var Data = function (data) {
     this.caption = caption.node.text
   } catch (e) {}
   this.comments_count = data.edge_media_to_comment.count
-  this.page_has_next = data.has_next_page
-  this.page_end_cursor = data.end_cursor
+  // this.page_has_next = data.has_next_page
+  // this.page_end_cursor = data.end_cursor
 }
 
 // Image.prototype.getThumbnail = function (size) {

@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/ignocide/ig-scrap#readme",
   "dependencies": {
-    "axios": "^0.16.2"
+    "axios": "^0.16.2",
+    "redis": "^2.8.0"
   }
 }

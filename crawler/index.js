@@ -1,6 +1,8 @@
 'use strict'
 
 const axios = require('axios')
+const fs = require('fs')
+const redis = require('redis')
 const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
 const Media = require('./model/Media')
@@ -9,6 +11,7 @@ const User = require('./model/User')
 const Data = require('./model/Data')
 const urlParser = require('./urlParser')
 
+var client = redis.createClient()
 var token = null
 
 var parse = function (string) {
@@ -26,15 +29,28 @@ var normalizeMedia = function (arr) {
   var list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
+      setTimeout(function() {
+      // console.log(item.shortcode)
+        client.exists(item.shortcode, function(err, replay){
+          if(replay === 1) {
+            // console.log('data exists ,no write...')
+            console.log('.')
+          } else {
+            client.hmset(item.shortcode, item)
+            console.log(item.shortcode)
+          }
+        })
+      }, 2000)
     list.push(item)
   }
+  
   return new Media(list)
 }
 
 //page end_cursor
 var nextPage = null
 
-var nextPage = function(tag, token) {
+var nextPage = function(tag, token, callback) {
   
   var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
   return axios.get(url)
@@ -43,36 +59,60 @@ var nextPage = function(tag, token) {
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
       
+      fs.writeFile('pagetoken.txt', token + "\n", function(err) {
+        if(err) {
+           return console.log(err)
+        }
+        console.log(token)
+      })
+      var result = {
+        media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
+      }
+      
+      setTimeout(function() {
+        // console.log('------------')
+        nextPage(tag, token)
+      }, 8000)
+      // nextPage(tag, token)
+      
     }
-    var result = {
-      media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
-    }
-    nextPage(tag, token)
+    
     // console.log(token)
   })
   .catch(function (err) {
-    callback(new RequestError(err))
+    // new Function()
+    fs.readFile('pagetoken.txt', function(err, data) {
+      if(err) {
+         throw err
+      }
+      setTimeout(function() {
+        media: nextPage(tag, data.toString())
+      }, 3000)
+    })
+    throw new Error(err)
+    // callback(new RequestError(err))
   })
 }
 
 
 exports.tag = function (tag, callback) {
-  var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1'
+  var stoken = null
+  var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
   return axios.get(url)
   .then(function (res) {
     var json = res.data
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      nextPage(tag, token)
-    }
       var result = {
-          media: nextPage(tag ,token)
+        media: nextPage(tag ,token)
       }
-      // console.log(json)
+    }
     callback(null, result)
   })
   .catch(function (err) {
-    callback(new RequestError(err))
+    // new Function()
+    throw new Error(e)
+    // callback(new RequestError(err))
   })
 }
 
@@ -93,8 +133,4 @@ exports.tag = function (tag, callback) {
 //   })
 // }
 
-// exports Models
-// exports.Media = Media
-// exports.User = User
 
-// exports.urlParser = urlParser
