@@ -3,7 +3,7 @@ var igScrap = require('./index')
 var log = function () {
   // console.log(arguments)
 }
-igScrap.tag('抹茶', function(err, result){
+igScrap.tag('matcha', function(err, result){
   // console.log(result)
 })
 // igScrap.user('https://www.instagram.com/zuck/', log)

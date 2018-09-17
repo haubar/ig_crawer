@@ -2,7 +2,7 @@
 
 const axios = require('axios')
 const fs = require('fs')
-const redis = require('redis')
+const db = require('./model/db')
 const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
 const Media = require('./model/Media')
@@ -11,7 +11,7 @@ const User = require('./model/User')
 const Data = require('./model/Data')
 const urlParser = require('./urlParser')
 
-var client = redis.createClient()
+// var client = redis.createClient()
 var token = null
 
 var parse = function (string) {
@@ -31,15 +31,19 @@ var normalizeMedia = function (arr) {
     let item = new Data(origin.node)
       setTimeout(function() {
       // console.log(item.shortcode)
-        client.exists(item.shortcode, function(err, replay){
-          if(replay === 1) {
-            // console.log('data exists ,no write...')
-            console.log('.')
-          } else {
-            client.hmset(item.shortcode, item)
-            console.log(item.shortcode)
-          }
-        })
+      if(db.find({"shortcode": { $exists : true, $eq : item.shortcode } }).limit(1)) {
+        console.log('Data exists') 
+      } else {
+        // db.insert()
+      }
+        // client.exists(item.shortcode, function(err, replay){
+        //   if(replay === 1) {
+        //     console.log('.')
+        //   } else {
+        //     client.hmset(item.shortcode, item)
+        //     console.log(item.shortcode)
+        //   }
+        // })
       }, 2000)
     list.push(item)
   }
@@ -72,7 +76,7 @@ var nextPage = function(tag, token, callback) {
       setTimeout(function() {
         // console.log('------------')
         nextPage(tag, token)
-      }, 8000)
+      }, 6000)
       // nextPage(tag, token)
       
     }
@@ -96,7 +100,7 @@ var nextPage = function(tag, token, callback) {
 
 
 exports.tag = function (tag, callback) {
-  var stoken = null
+  var stoken = ''
   var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
   return axios.get(url)
   .then(function (res) {
