@@ -34,6 +34,7 @@ var normalizeMedia = function (arr) {
       if(db.find({"shortcode": { $exists : true, $eq : item.shortcode } }).limit(1)) {
         console.log('Data exists') 
       } else {
+        db.save(item)
         // db.insert()
       }
         // client.exists(item.shortcode, function(err, replay){
