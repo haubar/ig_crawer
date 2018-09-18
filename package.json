@@ -25,6 +25,7 @@
   "homepage": "https://github.com/ignocide/ig-scrap#readme",
   "dependencies": {
     "axios": "^0.16.2",
-    "redis": "^2.8.0"
+    "dotenv": "^2.0.0",
+    "mongoose": "^4.6.3"
   }
 }
