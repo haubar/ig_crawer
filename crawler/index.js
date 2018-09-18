@@ -31,20 +31,16 @@ var normalizeMedia = function (arr) {
     let item = new Data(origin.node)
       setTimeout(function() {
       // console.log(item.shortcode)
-      if(db.find({"shortcode": { $exists : true, $eq : item.shortcode } }).limit(1)) {
-        console.log('Data exists') 
-      } else {
-        db.save(item)
-        // db.insert()
-      }
-        // client.exists(item.shortcode, function(err, replay){
-        //   if(replay === 1) {
-        //     console.log('.')
-        //   } else {
-        //     client.hmset(item.shortcode, item)
-        //     console.log(item.shortcode)
-        //   }
-        // })
+      // if(db.find({"shortcode": { $exists : true, $eq : item.shortcode } }).limit(1)) {
+       
+        if (!!db.where('shortcode').equals(item.shortcode).limit(1)) {
+          console.log('data exists...')
+        } else {
+          var matcha = new db(item)
+          matcha.save(function(err) {
+            console.log('data add')
+          })
+        }
       }, 2000)
     list.push(item)
   }
