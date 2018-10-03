@@ -20,7 +20,7 @@ var parse = function (string) {
     var dataString = string.match(dataExp)[1]
     json = JSON.parse(dataString)
   } catch (err) {
-    throw err
+    throw er
   }
   return json
 }
@@ -30,18 +30,24 @@ var normalizeMedia = function (arr) {
   for (let origin of arr) {
     let item = new Data(origin.node)
       setTimeout(function() {
-      // console.log(item.shortcode)
-      // if(db.find({"shortcode": { $exists : true, $eq : item.shortcode } }).limit(1)) {
-       
-        if (!!db.where('shortcode').equals(item.shortcode).limit(1)) {
-          console.log('data exists...')
-        } else {
-          var matcha = new db(item)
-          matcha.save(function(err) {
-            console.log('data add')
-          })
-        }
-      }, 2000)
+        db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1}, function (err, shortcode) {
+          if (shortcode.length == 0) {
+            var matcha = new db(item)
+            matcha.save(function(err) {
+              // console.log('data add')
+              console.log('data add')
+              // console.log(shortcode.length)
+              if (err) {
+                console.log('no add..')
+              }
+            })
+            matcha = null
+          } 
+          // else {
+          //   console.log('data exists...')
+          // }
+        }) 
+      }, 8000)
     list.push(item)
   }
   
@@ -88,7 +94,7 @@ var nextPage = function(tag, token, callback) {
       }
       setTimeout(function() {
         media: nextPage(tag, data.toString())
-      }, 3000)
+      }, 2000)
     })
     throw new Error(err)
     // callback(new RequestError(err))
