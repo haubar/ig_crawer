@@ -25,32 +25,27 @@ var parse = function (string) {
   return json
 }
 
+
 var normalizeMedia = function (arr) {
   var list = []
   for (let origin of arr) {
-    let item = new Data(origin.node)
-      setTimeout(function() {
-        db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1}, function (err, shortcode) {
-          if (shortcode.length == 0) {
-            var matcha = new db(item)
-            matcha.save(function(err) {
-              // console.log('data add')
-              console.log('data add')
-              // console.log(shortcode.length)
-              if (err) {
-                console.log('no add..')
-              }
-            })
-            matcha = null
-          } 
-          // else {
-          //   console.log('data exists...')
-          // }
-        }) 
-      }, 8000)
-    list.push(item)
+    var item = new Data(origin.node)
+    /*
+    db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1}, function (err, shortcode){
+      if (shortcode.length <= 0) {
+        // list.push(item)
+        gg.push(item)
+        console.log(item.shortcode)
+        // return item
+      }
+      console.log(gg.length)
+      // return gg
+    })
+    */ 
+    console.log(item.shortcode)
+    console.log(item)
   }
-  
+  console.log(gg)
   return new Media(list)
 }
 
@@ -68,33 +63,34 @@ var nextPage = function(tag, token, callback) {
       
       fs.writeFile('pagetoken.txt', token + "\n", function(err) {
         if(err) {
-           return console.log(err)
+          console.log(err)
+        } else {
+          console.log(token)
         }
-        console.log(token)
       })
       var result = {
         media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
       }
-      
-      setTimeout(function() {
-        // console.log('------------')
-        nextPage(tag, token)
-      }, 6000)
-      // nextPage(tag, token)
-      
+      // console.log(result.media)
+      if (result.media.length > 0) {
+        db.insertMany(result.media, function(err) {
+          console.log(' add row - count: '+result.media.length)
+        })
+        // nextPage(tag, token)
+      }
+      nextPage(tag, token)
     }
-    
-    // console.log(token)
   })
   .catch(function (err) {
     // new Function()
     fs.readFile('pagetoken.txt', function(err, data) {
       if(err) {
          throw err
+      } else {
+        setTimeout(function() {
+          media: nextPage(tag, data.toString())
+        }, 2000)
       }
-      setTimeout(function() {
-        media: nextPage(tag, data.toString())
-      }, 2000)
     })
     throw new Error(err)
     // callback(new RequestError(err))
