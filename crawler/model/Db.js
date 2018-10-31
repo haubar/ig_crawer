@@ -15,8 +15,8 @@ var schema = mongoose.Schema({
               })
 
 mongoose.connect( process.env.DB_HOST ,{useNewUrlParser:true})
-// var db_ct = mongoose.model('matchakon', schema)
-var db_ct = mongoose.model('aatest', schema)
+var db_ct = mongoose.model('matchakon', schema)
+// var db_ct = mongoose.model('aatest', schema)
 // var db_ct = mongoose.model('matcha', schema)
 
 module.exports = db_ct

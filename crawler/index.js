@@ -5,7 +5,7 @@ const fs = require('fs')
 const db = require('./model/db')
 const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
-const Media = require('./model/Media')
+// const Media = require('./model/Media')
 const User = require('./model/User')
 // const Image = require('./model/Image')
 const Data = require('./model/Data')
@@ -20,65 +20,70 @@ var parse = function (string) {
     var dataString = string.match(dataExp)[1]
     json = JSON.parse(dataString)
   } catch (err) {
-    throw er
+    throw err
   }
   return json
 }
 
 
-var normalizeMedia = function (arr) {
+var normalize = async function (arr) {
   var list = []
   for (let origin of arr) {
-    var item = new Data(origin.node)
-    /*
-    db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1}, function (err, shortcode){
-      if (shortcode.length <= 0) {
-        // list.push(item)
-        gg.push(item)
-        console.log(item.shortcode)
-        // return item
-      }
-      console.log(gg.length)
-      // return gg
-    })
-    */ 
-    console.log(item.shortcode)
-    console.log(item)
+    let item = new Data(origin.node)
+    // console.log(item)
+    // console.log(Object.keys(item).length)
+    await db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1})
+      .then(
+        shortcode => {
+          if (Object.keys(shortcode).length <= 0) {
+            list.push(item)
+            console.log(' No Find Data, Add '+item.shortcode)
+          } else {
+            // console.log(shortcode)
+            console.log('Find Data : '+Object.keys(shortcode).length)
+          }
+        }
+      )
+    
+    // list.push(item)
+    // console.log(item.shortcode)
+    console.log(list.length)
   }
-  return new Media(list)
+  return list
+}
+
+let writeDB = async function(result){
+  // console.log(result)
+  db.insertMany(result).then(
+        console.log(' add row - count: '+result.length),
+        // nextPage(tag, token)
+      )
+}
+let writeFS = async function(token){
+  fs.writeFile('pagetoken.txt', token + "\n", function(err) {
+      if(err) {
+        console.log(err)
+      } else {
+        console.log(token)
+      }
+  })
 }
 
 //page end_cursor
-var nextPage = null
-
-var nextPage = function(tag, token, callback) {
+var nextPage = async function(tag, token, callback) {
   
   var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
-  return axios.get(url)
-  .then(function (res) {
+  return await axios.get(url)
+  .then(async function (res) {
     var json = res.data
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      
-      fs.writeFile('pagetoken.txt', token + "\n", function(err) {
-        if(err) {
-          console.log(err)
-        } else {
-          console.log(token)
-        }
-      })
-      var result = {
-        media: normalizeMedia(json.graphql.hashtag.edge_hashtag_to_media.edges)
-      }
-      // console.log(result.media)
-      if (result.media.length > 0) {
-        db.insertMany(result.media, function(err) {
-          console.log(' add row - count: '+result.media.length)
-        })
-        // nextPage(tag, token)
-      }
-      nextPage(tag, token)
+      var result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
     }
+      await writeDB(result)
+      await writeFS(token)
+      await nextPage(tag, token)
+
   })
   .catch(function (err) {
     // new Function()
@@ -87,7 +92,7 @@ var nextPage = function(tag, token, callback) {
          throw err
       } else {
         setTimeout(function() {
-          media: nextPage(tag, data.toString())
+          nextPage(tag, data.toString())
         }, 2000)
       }
     })
@@ -97,23 +102,20 @@ var nextPage = function(tag, token, callback) {
 }
 
 
-exports.tag = function (tag, callback) {
+exports.tag = async function (tag, callback) {
   var stoken = ''
   var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
-  return axios.get(url)
+  return await axios.get(url)
   .then(function (res) {
     var json = res.data
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      var result = {
-        media: nextPage(tag ,token)
-      }
+      let result = nextPage(tag ,token)
     }
-    callback(null, result)
   })
   .catch(function (err) {
     // new Function()
-    throw new Error(e)
+    throw new Error(err)
     // callback(new RequestError(err))
   })
 }
