@@ -45,7 +45,6 @@ var normalizeMedia = function (arr) {
     console.log(item.shortcode)
     console.log(item)
   }
-  console.log(gg)
   return new Media(list)
 }
 
