@@ -38,6 +38,7 @@ var normalize = async function (arr) {
           if (Object.keys(shortcode).length <= 0) {
             list.push(item)
             console.log(' No Find Data, Add '+item.shortcode)
+            digLocation(item.shortcode)
             // var matcha = new db(item)
             // matcha.save().then(
             //   console.log('DB add row - count: '+item.shortcode),
@@ -133,6 +134,35 @@ var nextPage = async function(tag, token, callback) {
     //   nextPage(tag, data.toString())
     // }, 5000)
     throw new Error(err)
+  })
+}
+
+
+var digLocation = async function(shortcode, callback) {
+  var url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
+  return await axios.get(url)
+  .then(async function (res) {
+      var json = res.data
+      if(!!json.graphql.shortcode_media.location.id != false) {
+          let location_id = json.graphql.shortcode_media.location.id
+          console.log(location_id)
+          let result_location = await digCoordinate(location_id)
+      }
+  })
+}
+
+var digCoordinate = async function(location, callback) {
+  var url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1&max_id=' + token
+  return await axios.get(url)
+  .then(async function (res) {
+      var json = res.data
+      console.log(res.data)
+      if(!!json.graphql.location.lat && !!json.graphql.location.lng) {
+          let location_lat = json.graphql.location.lat
+          let location_lng = json.graphql.location.lng
+          //需設計location 欄位
+          // result_add_coordinate =  await updateDB(location.id, location.name, location_lat, location_lng)
+      }
   })
 }
 
