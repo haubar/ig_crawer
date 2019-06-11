@@ -3,17 +3,17 @@ require('dotenv').config()
 var mongoose = require('mongoose')
 var schema = mongoose.Schema({
                     //基本抓取資訊
-                    id: Number,
+                    id: String,
                     shortcode: String,
                     timestamp: Number,
                     display_url: String,
                     thumbnail_src: String,
-                    owner_id: Number,
+                    owner_id: String,
                     location_name: String,
-                    location_id: Number,
+                    location_id: String,
                     lat: String,
                     lng: String,
-                    address: String,
+                    address: JSON,
                     //添加輔助資料
                     sort: Number,
                     enable: Boolean,
