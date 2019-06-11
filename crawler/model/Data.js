@@ -5,15 +5,13 @@ var Data = function (data) {
   this.id = data.id
   this.shortcode = data.shortcode
   this.timestamp = data.taken_at_timestamp
-  // this.dimensions_width = data.dimensions.width
-  // this.dimensions_height = data.dimensions.height
   this.display_url = data.display_url
-  // this.like_count = data.edge_liked_by.count
-  // this.preview_like_count = data.edge_media_preview_like.count
   this.thumbnail_src = data.thumbnail_src
   this.owner_id = data.owner.id
 
   
+  // this.caption = null
+  // this.caption = null
   // this.caption = null
   try {
     // var caption = data.edge_media_to_caption.edges[0]

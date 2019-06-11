@@ -26,6 +26,8 @@
   "dependencies": {
     "axios": "^0.16.2",
     "dotenv": "^6.0.0",
+    "fs": "^0.0.1-security",
+    "moment": "^2.24.0",
     "mongoose": "^5.3.7"
   }
 }

@@ -1,8 +1,9 @@
-// order is important
+// 網址驗證
 var UrlParser = function () {
   this.TYPE = {
     TAG: 'tag',
-    USER: 'user'
+    USER: 'user',
+    LOCATION: 'location',
   }
   this.urlRules = {
     tag: {
@@ -10,7 +11,10 @@ var UrlParser = function () {
     },
     user: {
       rule: /((https?):\/\/)?(www\.)?instagram\.com\/([\w._]+)\/?/mi
-    }
+    },
+    location: {
+      rule: /((https?):\/\/)?(www\.)?instagram.com\/explore\/locations\/([\d_]+)/mi
+    },
   }
 }
 
@@ -29,6 +33,10 @@ UrlParser.prototype.tag = function (url) {
 
 UrlParser.prototype.user = function (url) {
   return this.parse(this.TYPE.USER, url)
+}
+
+UrlParser.prototype.location = function (url) {
+  return this.parse(this.TYPE.LOCATION, url)
 }
 
 module.exports = new UrlParser()

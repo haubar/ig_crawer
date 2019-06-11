@@ -2,9 +2,8 @@
 
 const axios = require('axios')
 const fs = require('fs')
-const moment = require('moment')
 const db = require('./model/db')
-// const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
+const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
 const User = require('./model/User')
 const Data = require('./model/Data')
@@ -28,7 +27,7 @@ var token = null
 //   return json
 // }
 
-//主要的資料存取
+
 let normalize = async function (arr) {
   var list = []
   for (let origin of arr) {
@@ -39,10 +38,9 @@ let normalize = async function (arr) {
       .then(
         shortcode => {
           if (Object.keys(shortcode).length <= 0) {
-            console.log(' No Find Data, Add '+item.shortcode)
-            let location = digLocation(item.shortcode)
-            item.push(location)
             list.push(item)
+            console.log(' No Find Data, Add '+item.shortcode)
+            digLocation(item.shortcode)
             // var matcha = new db(item)
             // matcha.save().then(
             //   console.log('DB add row - count: '+item.shortcode),
@@ -51,7 +49,7 @@ let normalize = async function (arr) {
           } else {
             //double check
             if (Object.keys(shortcode).length > 1) {
-              console.info('repeat data: ',shortcode)
+              console.log(shortcode)
               fs.appendFile('repeat_shortcode.txt', shortcode + "\n", function(err) {})
             }
             // console.log('Find Data : '+Object.keys(shortcode).length)
@@ -91,7 +89,6 @@ let writeFS = async function(token){
   })
 }
 
-//有錯誤中斷時的備用讀取斷點
 let readFS = async function(tag){
   fs.readFile('pagetoken.txt', function(err, data) {
     if(err) {
@@ -108,7 +105,7 @@ let readFS = async function(tag){
 
 //page end_cursor
 let nextPage = async function(tag, token, callback) {
-  let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
+  var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
   return await axios.get(url)
   .then(async function (res) {
     var json = res.data
@@ -119,10 +116,10 @@ let nextPage = async function(tag, token, callback) {
       await writeDB(result)
       if (token != null) {
         await writeFS(token)
-        // setTimeout(function() {
-        //   console.log('next craw...')
-        //   nextPage(tag, token)
-        // }, 6000)
+        setTimeout(function() {
+          console.log('next craw...')
+          nextPage(tag, token)
+        }, 6000)
       } else {
         console.log('Page End ..................................')
         throw new Error()
@@ -144,47 +141,46 @@ let nextPage = async function(tag, token, callback) {
 
 
 let digLocation = async function(shortcode, callback) {
-  let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
+  var url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
   return await axios.get(url)
   .then(async function (res) {
-      let json = res.data
+      var json = res.data
       if(!!json.graphql.shortcode_media.location.id != false) {
           let location_id = json.graphql.shortcode_media.location.id
-          console.info('location id: ',location_id)
+          console.log(location_id)
           let result_location = await digCoordinate(location_id)
       }
   })
 }
 
-let digCoordinate = async function(location, callback) {
-  let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1&max_id=' + token
+var digCoordinate = async function(location, callback) {
+  var url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1&max_id=' + token
   return await axios.get(url)
   .then(async function (res) {
-      let json = res.data
-      // console.log(res.data)
-      if(!!json.graphql.location.id) {
-        for (let origin of json.graphql) {
-          let item = new Location(origin.node)
-        }
+      var json = res.data
+      console.log(res.data)
+      if(!!json.graphql.location.lat && !!json.graphql.location.lng) {
+          let location_lat = json.graphql.location.lat
+          let location_lng = json.graphql.location.lng
+          //需設計location 欄位
+          // result_add_coordinate =  await updateDB(location.id, location.name, location_lat, location_lng)
       }
   })
 }
 
-//改為時間斷點，減少end_cursor與token改變時，會有重覆資料的狀況
-// moment(1541411221345).format('YYYY-MM-DD')
 
 exports.tag = async function (tag, callback) {
-  let stoken = ''
-  let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
+  var stoken = ''
+  var url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
   return await axios.get(url)
   .then(async function (res) {
-    let json = res.data
-    let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
+    var json = res.data
+    var result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
     await writeDB(result)
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
       
-      await nextPage(tag ,token)
+        await nextPage(tag ,token)
     } else {
       console.log('Page End ..................................')
       throw new Error()
@@ -198,6 +194,21 @@ exports.tag = async function (tag, callback) {
 }
 
 
+// exports.user = function (user, callback) {
+//   var url = 'https://www.instagram.com/' + urlParser.user(user)
+//   return axios.get(url)
+//   .then(function (res) 
+//     var json = parse(res.data)
+//     var result = {
+//       user: new User(json.entry_data.ProfilePage[0].graphql.user),
+//       media: normalizeMedia(json.entry_data.ProfilePage[0].graphql.user.edge_owner_to_timeline_media.edges)
+//     }
 
+//     callback(null, result)
+//   })
+//   .catch(function (err) {
+//     callback(new RequestError(err))
+//   })
+// }
 
 
