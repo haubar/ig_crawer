@@ -1,4 +1,5 @@
 'use strict'
+const moment = require('moment')
 
 var Data = function (data) {
   //第一層
@@ -8,8 +9,11 @@ var Data = function (data) {
   this.display_url = data.display_url
   this.thumbnail_src = data.thumbnail_src
   this.owner_id = data.owner.id
+  this.sort = 1,
+  this.enable = true,
+  this.created_date = moment(data.taken_at_timestamp).format('YYYY-MM-DD')
 
-  
+  // moment(1541411221345).format('YYYY-MM-DD')
   // this.caption = null
   // this.caption = null
   // this.caption = null

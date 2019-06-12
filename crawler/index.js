@@ -2,7 +2,7 @@
 
 const axios = require('axios')
 const fs = require('fs')
-const moment = require('moment')
+// const moment = require('moment')
 const db = require('./model/db')
 // const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
@@ -16,7 +16,7 @@ const urlParser = require('./urlParser')
 
 // var client = redis.createClient()
 var token = null
-
+// let list = []
 // var parse = function (string) {
 //   var json = null
 //   try {
@@ -30,45 +30,27 @@ var token = null
 
 //主要的資料存取
 let normalize = async function (arr) {
-  var list = []
+  let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
-    // console.log(item)
-    // console.log(Object.keys(item).length)
-    await db.find({shortcode:item.shortcode}, {_id: 0,shortcode: 1})
-      .then(
-        shortcode => {
-          if (Object.keys(shortcode).length <= 0) {
-            console.log(' No Find Data, Add '+item.shortcode)
-            let location = digLocation(item.shortcode)
-            item.push(location)
-            list.push(item)
-            // var matcha = new db(item)
-            // matcha.save().then(
-            //   console.log('DB add row - count: '+item.shortcode),
-            //   // nextPage(tag, token)
-            // )
-          } else {
-            //double check
-            if (Object.keys(shortcode).length > 1) {
-              console.info('repeat data: ',shortcode)
-              fs.appendFile('repeat_shortcode.txt', shortcode + "\n", function(err) {})
-            }
-            // console.log('Find Data : '+Object.keys(shortcode).length)
-          }
-        }
-      )
-    
-    // list.push(item)
-    // console.log(item.shortcode)
-    // console.log(list.length)
+    await console.log(' No Find Data, Add '+item.shortcode)
+    let local = await digLocation(item.shortcode)
+    let newItem = Object.assign(item, local);
+    list.push(newItem)
   }
   return list
 }
 
+//location filter
+let locate = async function (data) {
+    let item = new Location(data)
+    return item
+}
+
+//多筆寫入
 let writeDB = async function(result){
   // console.log(result)
-  db.insertMany(result, {safe: true}).then(
+ await db.insertMany(result, {safe: true}).then(
         console.log(' add row - count: '+result.length),
         // nextPage(tag, token)
       )
@@ -109,16 +91,16 @@ let readFS = async function(tag){
 //page end_cursor
 let nextPage = async function(tag, token, callback) {
   let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
-  return await axios.get(url)
+  return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
-    var json = res.data
+    let json = res.data
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      var result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
+      let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
     }
-      await writeDB(result)
+      // await writeDB(result)
       if (token != null) {
-        await writeFS(token)
+        // await writeFS(token)
         // setTimeout(function() {
         //   console.log('next craw...')
         //   nextPage(tag, token)
@@ -138,6 +120,9 @@ let nextPage = async function(tag, token, callback) {
     // setTimeout(function(data) {
     //   nextPage(tag, data.toString())
     // }, 5000)
+
+    // setTimeout(() => console.log('Loaded'), 2000);
+    
     throw new Error(err)
   })
 }
@@ -145,46 +130,45 @@ let nextPage = async function(tag, token, callback) {
 
 let digLocation = async function(shortcode, callback) {
   let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
-  return await axios.get(url)
+  return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
       let json = res.data
-      if(!!json.graphql.shortcode_media.location.id != false) {
+      if(json.graphql.shortcode_media.location) {
           let location_id = json.graphql.shortcode_media.location.id
-          console.info('location id: ',location_id)
-          let result_location = await digCoordinate(location_id)
+          await console.info('位置id ', location_id)
+          let data = await digCoordinate(location_id)
+          return data
+      } else {
+          await console.log('沒有Location ID')
       }
   })
 }
 
 let digCoordinate = async function(location, callback) {
-  let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1&max_id=' + token
-  return await axios.get(url)
+  let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1'
+  return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
       let json = res.data
-      // console.log(res.data)
-      if(!!json.graphql.location.id) {
-        for (let origin of json.graphql) {
-          let item = new Location(origin.node)
-        }
-      }
+      await console.info('位置名稱',json.graphql.location.name)
+      let data = await locate(json.graphql.location)
+      return data
   })
 }
 
-//改為時間斷點，減少end_cursor與token改變時，會有重覆資料的狀況
-// moment(1541411221345).format('YYYY-MM-DD')
 
 exports.tag = async function (tag, callback) {
   let stoken = ''
   let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
-  return await axios.get(url)
+  return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
     let json = res.data
     let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
-    await writeDB(result)
+    await console.log(result)
+    // await writeDB(result)
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      
-      await nextPage(tag ,token)
+      console.info('下一頁存在...', token)
+      // await nextPage(tag ,token)
     } else {
       console.log('Page End ..................................')
       throw new Error()

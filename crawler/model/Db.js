@@ -5,7 +5,7 @@ var schema = mongoose.Schema({
                     //基本抓取資訊
                     id: String,
                     shortcode: String,
-                    timestamp: Number,
+                    timestamp: String,
                     display_url: String,
                     thumbnail_src: String,
                     owner_id: String,
