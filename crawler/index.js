@@ -2,31 +2,23 @@
 
 const axios = require('axios')
 const fs = require('fs')
-// const moment = require('moment')
 const db = require('./model/db')
-// const dataExp = /window\._sharedData\s?=\s?({.+);<\/script>/
 const RequestError = require('./model/RequestError')
 const User = require('./model/User')
 const Data = require('./model/Data')
 const Location = require('./model/Location')
 const urlParser = require('./urlParser')
 
-// const Image = require('./model/Image')
-// const Media = require('./model/Media')
 
 // var client = redis.createClient()
 var token = null
-// let list = []
-// var parse = function (string) {
-//   var json = null
-//   try {
-//     var dataString = string.match(dataExp)[1]
-//     json = JSON.parse(dataString)
-//   } catch (err) {
-//     throw err
-//   }
-//   return json
-// }
+
+//清空log
+fs.writeFile('logtoken.txt', "\n", function(err) {
+  if(err) {
+    console.log(err)
+  }
+})
 
 //主要的資料存取
 let normalize = async function (arr) {
@@ -34,9 +26,10 @@ let normalize = async function (arr) {
   for (let origin of arr) {
     let item = new Data(origin.node)
     await console.log(' No Find Data, Add '+item.shortcode)
-    let local = await digLocation(item.shortcode)
-    let newItem = Object.assign(item, local);
-    list.push(newItem)
+    // let local = await digLocation(item.shortcode)
+    // let newItem = Object.assign(item, local);
+    // list.push(newItem)
+    list.push(item)
   }
   return list
 }
@@ -51,9 +44,19 @@ let locate = async function (data) {
 let writeDB = async function(result){
   // console.log(result)
  await db.insertMany(result, {safe: true}).then(
-        console.log(' add row - count: '+result.length),
+        console.log(' add row - count: '+result.length)
         // nextPage(tag, token)
       )
+}
+
+let updateDB = async function(result, shortcode){
+  await db.updateOne(
+      { "shortcode": shortcode },
+      { $set: result },
+      { upsert: true}
+    ).then(
+      console.log(' update row - count: '+result.length)
+    )
 }
 
 let writeFS = async function(token){
@@ -96,37 +99,27 @@ let nextPage = async function(tag, token, callback) {
     let json = res.data
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
+      var result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
     }
-      // await writeDB(result)
+      await writeDB(result)
       if (token != null) {
-        // await writeFS(token)
-        // setTimeout(function() {
-        //   console.log('next craw...')
-        //   nextPage(tag, token)
-        // }, 6000)
+        await writeFS(token)
+        await setTimeout(() => console.info('下一頁存在...', token), 5000);
+        nextPage(tag, token)
       } else {
         console.log('Page End ..................................')
         throw new Error()
       }
-      
-
   })
   .catch(async function (err) {
-    // new Function()  
       console.log(' To Reconnect !')
       await readFS(tag)
-  
-    // setTimeout(function(data) {
-    //   nextPage(tag, data.toString())
-    // }, 5000)
 
     // setTimeout(() => console.log('Loaded'), 2000);
-    
+
     throw new Error(err)
   })
 }
-
 
 let digLocation = async function(shortcode, callback) {
   let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
@@ -163,12 +156,13 @@ exports.tag = async function (tag, callback) {
   .then(async function (res) {
     let json = res.data
     let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
-    await console.log(result)
-    // await writeDB(result)
+    // await console.log(result)
+    await writeDB(result)
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      console.info('下一頁存在...', token)
-      // await nextPage(tag ,token)
+      
+      await setTimeout(() => console.info('下一頁存在...', token), 3000);
+      await nextPage(tag ,token)
     } else {
       console.log('Page End ..................................')
       throw new Error()

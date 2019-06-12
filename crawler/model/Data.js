@@ -11,8 +11,8 @@ var Data = function (data) {
   this.owner_id = data.owner.id
   this.sort = 1,
   this.enable = true,
-  this.created_date = moment(data.taken_at_timestamp).format('YYYY-MM-DD')
-
+  this.created_date = moment.unix(data.taken_at_timestamp).format('YYYY-MM-DD H:m:s')
+  
   // moment(1541411221345).format('YYYY-MM-DD')
   // this.caption = null
   // this.caption = null
