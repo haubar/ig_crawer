@@ -25,7 +25,7 @@ let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
-    await console.log(' No Find Data, Add '+item.shortcode)
+    // await console.log(' No Find Data, Add '+item.shortcode)
     // let local = await digLocation(item.shortcode)
     // let newItem = Object.assign(item, local);
     // list.push(newItem)
@@ -78,15 +78,15 @@ let writeFS = async function(token){
 
 //有錯誤中斷時的備用讀取斷點
 let readFS = async function(tag){
-  fs.readFile('pagetoken.txt', function(err, data) {
+  await fs.readFile('pagetoken.txt', async function(err, data) {
     if(err) {
       throw new Error(err)
     } else {
-      console.log('get token in file ....'+ data.toString())
-      setTimeout(function() {
-        nextPage(tag, data.toString())
-      }, 5000)
-      
+      await console.log('get token in file ....'+ data.toString())
+      await console.log(' To retry...') 
+      await setTimeout(() => console.log(' To retry... for five second'), 5000)
+      await setTimeout(() => nextPage(tag, data.toString()), 5000)
+      // await nextPage(tag, data.toString())
     }
   })
 }
@@ -104,20 +104,20 @@ let nextPage = async function(tag, token, callback) {
       await writeDB(result)
       if (token != null) {
         await writeFS(token)
-        await setTimeout(() => console.info('下一頁存在...', token), 5000);
-        nextPage(tag, token)
+        await setTimeout(() => nextPage(tag, token), 5000)
+        // await nextPage(tag, token)
       } else {
         console.log('Page End ..................................')
         throw new Error()
       }
   })
   .catch(async function (err) {
-      console.log(' To Reconnect !')
+      await setTimeout(() => console.log(' To Reconnect !'), 6000);
       await readFS(tag)
 
     // setTimeout(() => console.log('Loaded'), 2000);
 
-    throw new Error(err)
+      throw new Error(err)
   })
 }
 
@@ -150,7 +150,10 @@ let digCoordinate = async function(location, callback) {
 
 
 exports.tag = async function (tag, callback) {
+  // let store_token = await readFS(tag)
   let stoken = ''
+  // let stoken = store_token ? store_token : ""
+  console.log(stoken)
   let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
   return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
@@ -161,7 +164,7 @@ exports.tag = async function (tag, callback) {
     if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
       token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
       
-      await setTimeout(() => console.info('下一頁存在...', token), 3000);
+      await setTimeout(() => console.info('下一頁存在...', token), 5000);
       await nextPage(tag ,token)
     } else {
       console.log('Page End ..................................')
