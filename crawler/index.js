@@ -4,7 +4,6 @@ const axios = require('axios')
 const fs = require('fs')
 const db = require('./model/db')
 const RequestError = require('./model/RequestError')
-const User = require('./model/User')
 const Data = require('./model/Data')
 const Location = require('./model/Location')
 const urlParser = require('./urlParser')
@@ -13,28 +12,17 @@ const urlParser = require('./urlParser')
 // var client = redis.createClient()
 var token = null
 
-//清空log
-fs.writeFile('logtoken.txt', "\n", function(err) {
-  if(err) {
-    console.log(err)
-  }
-})
-
-//主要的資料存取
+//主資料filter - 多筆
 let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
-    // await console.log(' No Find Data, Add '+item.shortcode)
-    // let local = await digLocation(item.shortcode)
-    // let newItem = Object.assign(item, local);
-    // list.push(newItem)
     list.push(item)
   }
   return list
 }
 
-//location filter
+//座標資料 filter
 let locate = async function (data) {
     let item = new Location(data)
     return item
@@ -45,39 +33,44 @@ let writeDB = async function(result){
   // console.log(result)
  await db.insertMany(result, {safe: true}).then(
         console.log(' add row - count: '+result.length)
-        // nextPage(tag, token)
       )
 }
 
-let updateDB = async function(result, shortcode){
-  await db.updateOne(
+//更新DB資料
+let updateDB = async function(data, shortcode){
+  await db.findOneAndUpdate(
       { "shortcode": shortcode },
-      { $set: result },
-      { upsert: true}
+      { $set: data }
     ).then(
-      console.log(' update row - count: '+result.length)
-    )
+      console.log(' update data for shortcode - : '+ shortcode)
+  ) 
 }
 
-let writeFS = async function(token){
+let updatepageToken = async function(token){
   fs.writeFile('pagetoken.txt', token + "\n", function(err) {
       if(err) {
         console.log(err)
-      } else {
-        // console.log(token)
-      }
+      } 
   })
+}
+
+let addtokenLog = async function(token){
   fs.appendFile('logtoken.txt', token + "\n", function(err) {
     if(err) {
       console.log(err)
-    } else {
-      // console.log(token)
-    }
+    } 
+  })
+}
+let addshortcodeLog = async function(token){
+  fs.appendFile('logshortcode.txt', token + "\n", function(err) {
+    if(err) {
+      console.log(err)
+    } 
   })
 }
 
 //有錯誤中斷時的備用讀取斷點
-let readFS = async function(tag){
+let regetData = async function(tag){
   await fs.readFile('pagetoken.txt', async function(err, data) {
     if(err) {
       throw new Error(err)
@@ -148,7 +141,7 @@ let digCoordinate = async function(location, callback) {
   })
 }
 
-
+//get tag data
 exports.tag = async function (tag, callback) {
   // let store_token = await readFS(tag)
   let stoken = ''
@@ -178,7 +171,11 @@ exports.tag = async function (tag, callback) {
   })
 }
 
-
+//update place data
+exports.place = async function (shortcode, callback) {
+  let place = await digLocation(shortcode)
+  await updateDB(place, shortcode)
+}
 
 
 
