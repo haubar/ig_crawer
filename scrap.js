@@ -9,7 +9,7 @@ igcraw.tag('抹茶', function(err, result){
   // console.log(result)
 })
 
-igcraw.place(shortcode)
+// igcraw.place(shortcode)
 
 
 // igScrap.user('https://www.instagram.com/zuck/', log)

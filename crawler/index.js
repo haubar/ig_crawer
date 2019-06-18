@@ -10,7 +10,7 @@ const urlParser = require('./urlParser')
 
 
 // var client = redis.createClient()
-var token = null
+
 
 //主資料filter - 多筆
 let normalize = async function (arr) {
@@ -30,7 +30,6 @@ let locate = async function (data) {
 
 //多筆寫入
 let writeDB = async function(result){
-  // console.log(result)
  await db.insertMany(result, {safe: true}).then(
         console.log(' add row - count: '+result.length)
       )
@@ -61,8 +60,9 @@ let addtokenLog = async function(token){
     } 
   })
 }
-let addshortcodeLog = async function(token){
-  fs.appendFile('logshortcode.txt', token + "\n", function(err) {
+
+let addshortcodeLog = async function(code){
+  fs.appendFile('logshortcode.txt', code + "\n", function(err) {
     if(err) {
       console.log(err)
     } 
@@ -76,10 +76,8 @@ let regetData = async function(tag){
       throw new Error(err)
     } else {
       await console.log('get token in file ....'+ data.toString())
-      await console.log(' To retry...') 
       await setTimeout(() => console.log(' To retry... for five second'), 5000)
       await setTimeout(() => nextPage(tag, data.toString()), 5000)
-      // await nextPage(tag, data.toString())
     }
   })
 }
@@ -91,14 +89,15 @@ let nextPage = async function(tag, token, callback) {
   .then(async function (res) {
     let json = res.data
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
-      token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      var result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
+      var token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
+      var main_node = json.graphql.hashtag.edge_hashtag_to_media.edges
+      var result = await normalize(main_node)
     }
       await writeDB(result)
       if (token != null) {
-        await writeFS(token)
+        await updatepageToken(token)
+        await addtokenLog(token)
         await setTimeout(() => nextPage(tag, token), 5000)
-        // await nextPage(tag, token)
       } else {
         console.log('Page End ..................................')
         throw new Error()
@@ -106,10 +105,7 @@ let nextPage = async function(tag, token, callback) {
   })
   .catch(async function (err) {
       await setTimeout(() => console.log(' To Reconnect !'), 6000);
-      await readFS(tag)
-
-    // setTimeout(() => console.log('Loaded'), 2000);
-
+      await regetData(tag)
       throw new Error(err)
   })
 }
@@ -143,32 +139,7 @@ let digCoordinate = async function(location, callback) {
 
 //get tag data
 exports.tag = async function (tag, callback) {
-  // let store_token = await readFS(tag)
-  let stoken = ''
-  // let stoken = store_token ? store_token : ""
-  console.log(stoken)
-  let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + stoken
-  return await axios.get(url,{timeout: 5000})
-  .then(async function (res) {
-    let json = res.data
-    let result = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
-    // await console.log(result)
-    await writeDB(result)
-    if(!!json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page){
-      token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
-      
-      await setTimeout(() => console.info('下一頁存在...', token), 5000);
-      await nextPage(tag ,token)
-    } else {
-      console.log('Page End ..................................')
-      throw new Error()
-    }
-  })
-  .catch(function (err) {
-    // new Function()
-    throw new Error(err)
-    // callback(new RequestError(err))
-  })
+    await nextPage(tag, '')
 }
 
 //update place data
