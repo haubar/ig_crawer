@@ -26,11 +26,4 @@ var Data = function (data) {
   // this.page_end_cursor = data.end_cursor
 }
 
-// Image.prototype.getThumbnail = function (size) {
-//   let thumbnail = this.thumbnail_resources.find((resource) => {
-//     return resource.config_width === size
-//   })
-//   return thumbnail.src
-// }
-
 module.exports = Data
