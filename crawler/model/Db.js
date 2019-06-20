@@ -9,19 +9,19 @@ var schema = mongoose.Schema({
                     display_url: String,
                     thumbnail_src: String,
                     owner_id: String,
-                    location_name: String,
                     location_id: String,
+                    location_name: String,
                     lat: String,
                     lng: String,
                     address: JSON,
                     //添加輔助資料
                     sort: Number,
                     enable: Boolean,
-                    created_date: Date
+                    created_date: String
               })
-
-mongoose.connect( process.env.DB_HOST ,{useNewUrlParser:true})
-var db_ct = mongoose.model('match_devs_copy', schema)
+//設定連線，設定mongoose的Deprecation Warnings
+mongoose.connect( process.env.DB_HOST ,{useNewUrlParser:true, useFindAndModify: false, useCreateIndex: true})
+var db_ct = mongoose.model('match_devs_copys', schema)
 // var db_ct = mongoose.model('matchakon', schema)
 // var db_ct = mongoose.model('aatest', schema)
 // var db_ct = mongoose.model('matcha', schema)

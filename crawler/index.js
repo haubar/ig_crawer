@@ -17,6 +17,7 @@ let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
+    await addshortcodeLog(item.shortcode)
     list.push(item)
   }
   return list
@@ -35,18 +36,26 @@ let writeDB = async function(result){
       )
 }
 
+let getkeyDB = async function(params){
+ return await db.findOne(
+    {"location_id": null},
+    {"shortcode": 1}
+  ).then(
+    data => data.shortcode
+  )
+}
+
 //更新DB資料
 let updateDB = async function(data, shortcode){
   await db.findOneAndUpdate(
-      { "shortcode": shortcode },
-      { $set: data }
+      { "shortcode": shortcode }, data
     ).then(
       console.log(' update data for shortcode - : '+ shortcode)
   ) 
 }
 
 let updatepageToken = async function(token){
-  fs.writeFile('pagetoken.txt', token + "\n", function(err) {
+  fs.writeFileSync('pagetoken.txt', token + "\n", function(err) {
       if(err) {
         console.log(err)
       } 
@@ -114,15 +123,16 @@ let digLocation = async function(shortcode, callback) {
   let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
   return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
+      let data = ''
       let json = res.data
       if(json.graphql.shortcode_media.location) {
           let location_id = json.graphql.shortcode_media.location.id
           await console.info('位置id ', location_id)
-          let data = await digCoordinate(location_id)
-          return data
+          data = await digCoordinate(location_id)
       } else {
-          await console.log('沒有Location ID')
+          console.log('沒有Location ID')
       }
+      return data
   })
 }
 
@@ -137,15 +147,24 @@ let digCoordinate = async function(location, callback) {
   })
 }
 
-//get tag data
-exports.tag = async function (tag, callback) {
-    await nextPage(tag, '')
+//update place data
+let updatePlace = async function () {
+    let shortcode = await getkeyDB()
+    let place = await digLocation(shortcode)
+    if (place) {
+      await updateDB(place, shortcode)
+    } else {
+      console.info("not update place for code: ",shortcode )
+      await updatePlace()
+    }
 }
 
-//update place data
-exports.place = async function (shortcode, callback) {
-  let place = await digLocation(shortcode)
-  await updateDB(place, shortcode)
+exports.tag = async function (tag, callback) {
+  await nextPage(tag, '')
+}
+
+exports.place = async function () {
+  await updatePlace()
 }
 
 
