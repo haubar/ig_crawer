@@ -38,11 +38,19 @@ let writeDB = async function(result){
 
 let getkeyDB = async function(params){
  return await db.findOne(
-    {"location_id": null},
+    {"on_place": null},
     {"shortcode": 1}
   ).then(
     data => data.shortcode
   )
+}
+
+let removeDB = async function(shortcode){
+  await db.deleteOne(
+      { "shortcode": shortcode }
+    ).then(
+      console.log(' delete data for shortcode - : '+ shortcode)
+  ) 
 }
 
 //更新DB資料
@@ -97,6 +105,7 @@ let nextPage = async function(tag, token, callback) {
   return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
     let json = res.data
+    let action_date = moment.unix(json.graphql.hashtag.edge_hashtag_to_media.edges.taken_at_timestamp).format('YYYY-MM-DD')
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
       var token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
       var main_node = json.graphql.hashtag.edge_hashtag_to_media.edges
@@ -108,7 +117,9 @@ let nextPage = async function(tag, token, callback) {
         await addtokenLog(token)
         await setTimeout(() => nextPage(tag, token), 5000)
       } else {
-        console.log('Page End ..................................')
+        let lastData = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
+        await writeDB(lastData)
+        await console.log('Page End ..................................')
         throw new Error()
       }
   })
@@ -123,16 +134,20 @@ let digLocation = async function(shortcode, callback) {
   let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
   return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
-      let data = ''
       let json = res.data
       if(json.graphql.shortcode_media.location) {
           let location_id = json.graphql.shortcode_media.location.id
           await console.info('位置id ', location_id)
-          data = await digCoordinate(location_id)
+          return await digCoordinate(location_id)
       } else {
           console.log('沒有Location ID')
+          let data = { on_place: false }
+          return data
       }
-      return data
+  })
+  .catch(async function (err) {
+      await removeDB(shortcode)
+    // throw new Error(err)
   })
 }
 
@@ -145,18 +160,19 @@ let digCoordinate = async function(location, callback) {
       let data = await locate(json.graphql.location)
       return data
   })
+  .catch(async function (err) {
+    throw new Error(err)
+  })
 }
 
 //update place data
 let updatePlace = async function () {
     let shortcode = await getkeyDB()
-    let place = await digLocation(shortcode)
-    if (place) {
+      if (shortcode) {
+        var place = await digLocation(shortcode)
+      }
       await updateDB(place, shortcode)
-    } else {
-      console.info("not update place for code: ",shortcode )
-      await updatePlace()
-    }
+      await setTimeout(() => updatePlace(), 5000)
 }
 
 exports.tag = async function (tag, callback) {
