@@ -17,6 +17,7 @@ var schema = mongoose.Schema({
                     //添加輔助資料
                     sort: Number,
                     enable: Boolean,
+                    on_place: Boolean,
                     created_date: String
               })
 //設定連線，設定mongoose的Deprecation Warnings
