@@ -7,6 +7,7 @@ var Location = function (data) {
   this.lat = data.lat
   this.lng = data.lng
   this.address = data.address_json
+  this.on_place = true
   
   try {
     
