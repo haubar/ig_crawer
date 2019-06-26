@@ -5,24 +5,20 @@ const fs = require('fs')
 const db = require('./model/db')
 const RequestError = require('./model/RequestError')
 const Data = require('./model/Data')
+const moment = require('moment')
 const Location = require('./model/Location')
 const urlParser = require('./urlParser')
-
-
-// var client = redis.createClient()
-
+var time_point = moment('1995-12-25').unix()
 
 //主資料filter - 多筆
 let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
-    console.log(item.created_date)
-    // if (item.created_date){
-      
-    // }
-    await addshortcodeLog(item.shortcode)
-    list.push(item)
+    if (item.timestamp > time_point) {
+      await addshortcodeLog(item.shortcode)
+      list.push(item)
+    }
   }
   return list
 }
@@ -46,6 +42,13 @@ let getkeyDB = async function(params){
     {"shortcode": 1}
   ).then(
     data => data.shortcode
+  )
+}
+
+let getLastime = async function(){
+  return await db.findOne().sort({ timestamp: -1 }).limit(1)
+  .then(
+     data => { return data = (data)?data.timestamp:time_point }
   )
 }
 
@@ -120,6 +123,7 @@ let nextPage = async function(tag, token, callback) {
         await addtokenLog(token)
         await setTimeout(() => nextPage(tag, token), 5000)
       } else {
+
         let lastData = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
         await writeDB(lastData)
         await console.log('Page End ..................................')
@@ -179,6 +183,7 @@ let updatePlace = async function () {
 }
 
 exports.tag = async function (tag, callback) {
+  time_point = await getLastime()
   await nextPage(tag, '')
 }
 
