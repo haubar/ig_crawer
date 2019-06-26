@@ -17,6 +17,10 @@ let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
     let item = new Data(origin.node)
+    console.log(item.created_date)
+    // if (item.created_date){
+      
+    // }
     await addshortcodeLog(item.shortcode)
     list.push(item)
   }
@@ -105,7 +109,6 @@ let nextPage = async function(tag, token, callback) {
   return await axios.get(url,{timeout: 5000})
   .then(async function (res) {
     let json = res.data
-    let action_date = moment.unix(json.graphql.hashtag.edge_hashtag_to_media.edges.taken_at_timestamp).format('YYYY-MM-DD')
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
       var token = json.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor
       var main_node = json.graphql.hashtag.edge_hashtag_to_media.edges
