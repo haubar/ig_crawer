@@ -9,8 +9,9 @@ var Data = function (data) {
   this.display_url = data.display_url
   this.thumbnail_src = data.thumbnail_src
   this.owner_id = data.owner.id
-  this.sort = 1,
-  this.enable = true,
+  this.tag = data.tag
+  this.sort = 1
+  this.enable = true
   this.created_date = moment.unix(data.taken_at_timestamp).format('YYYY-MM-DD H:m:s')
   
   // moment(1541411221345).format('YYYY-MM-DD')

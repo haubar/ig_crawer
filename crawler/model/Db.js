@@ -15,6 +15,7 @@ var schema = mongoose.Schema({
                     lng: String,
                     address: JSON,
                     //添加輔助資料
+                    tag: String,
                     sort: Number,
                     enable: Boolean,
                     on_place: Boolean,
@@ -22,8 +23,8 @@ var schema = mongoose.Schema({
               })
 //設定連線，設定mongoose的Deprecation Warnings
 mongoose.connect( process.env.DB_HOST ,{useNewUrlParser:true, useFindAndModify: false, useCreateIndex: true})
-var db_ct = mongoose.model('match_devs_copys', schema)
-// var db_ct = mongoose.model('matchakon', schema)
+// var db_ct = mongoose.model('match_devs_copys', schema)
+var db_ct = mongoose.model('matchakon', schema)
 // var db_ct = mongoose.model('aatest', schema)
 // var db_ct = mongoose.model('matcha', schema)
 

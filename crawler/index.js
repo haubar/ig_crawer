@@ -8,12 +8,18 @@ const Data = require('./model/Data')
 const moment = require('moment')
 const Location = require('./model/Location')
 const urlParser = require('./urlParser')
-var time_point = moment('1995-12-25').unix()
+
+//設定變動資料
+var time_point = moment('1997-12-25').unix()
+var data_tag = ''
+
 
 //主資料filter - 多筆
 let normalize = async function (arr) {
   let list = []
   for (let origin of arr) {
+    //定義資料內tag
+    origin.node.tag = data_tag
     let item = new Data(origin.node)
     if (item.timestamp > time_point) {
       await addshortcodeLog(item.shortcode)
@@ -123,11 +129,9 @@ let nextPage = async function(tag, token, callback) {
         await addtokenLog(token)
         await setTimeout(() => nextPage(tag, token), 5000)
       } else {
-
         let lastData = await normalize(json.graphql.hashtag.edge_hashtag_to_media.edges)
         await writeDB(lastData)
         await console.log('Page End ..................................')
-        throw new Error()
       }
   })
   .catch(async function (err) {
@@ -182,8 +186,9 @@ let updatePlace = async function () {
       await setTimeout(() => updatePlace(), 5000)
 }
 
-exports.tag = async function (tag, callback) {
+exports.tag = async function (tag) {
   time_point = await getLastime()
+  data_tag = tag
   await nextPage(tag, '')
 }
 
