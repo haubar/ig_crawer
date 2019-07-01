@@ -21,10 +21,13 @@ let normalize = async function (arr) {
     //定義資料內tag
     origin.node.tag = data_tag
     let item = new Data(origin.node)
-    if (item.timestamp > time_point) {
-      await addshortcodeLog(item.shortcode)
-      list.push(item)
-    }
+    let shortcode = await getshortocdeDB(item.shortcode)
+    // if (item.timestamp > time_point) {
+      if (shortcode) {
+        // await addshortcodeLog(item.shortcode)
+        list.push(item)
+      }
+    // }
   }
   return list
 }
@@ -42,14 +45,23 @@ let writeDB = async function(result){
       )
 }
 
-let getkeyDB = async function(params){
+let getplaceDB = async function(params){
  return await db.findOne(
-    {"on_place": null},
+    {"on_place": params},
     {"shortcode": 1}
   ).then(
     data => data.shortcode
   )
 }
+
+let getshortocdeDB = async function(params){
+  return await db.findOne(
+     {"shortcode": params},
+     {"shortcode": 1}
+   ).then(
+     data => data.shortcode
+   )
+ }
 
 let getLastime = async function(){
   return await db.findOne().sort({ timestamp: -1 }).limit(1)
@@ -123,7 +135,7 @@ let nextPage = async function(tag, token, callback) {
       var main_node = json.graphql.hashtag.edge_hashtag_to_media.edges
       var result = await normalize(main_node)
     }
-      await writeDB(result)
+      if (result) await writeDB(result)
       if (token != null) {
         await updatepageToken(token)
         await addtokenLog(token)
@@ -178,12 +190,12 @@ let digCoordinate = async function(location, callback) {
 
 //update place data
 let updatePlace = async function () {
-    let shortcode = await getkeyDB()
+    let shortcode = await getplaceDB(null)
       if (shortcode) {
         var place = await digLocation(shortcode)
       }
       await updateDB(place, shortcode)
-      await setTimeout(() => updatePlace(), 5000)
+      await setTimeout(() => updatePlace(), 4200)
 }
 
 exports.tag = async function (tag) {
