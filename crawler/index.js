@@ -50,7 +50,9 @@ let getplaceDB = async function(params){
     {"on_place": params},
     {"shortcode": 1}
   ).then(
-    data => data.shortcode
+    data =>  (data)?data.shortcode:'' 
+  ).catch(
+    console.log('not null shortcode')
   )
 }
 
@@ -127,7 +129,7 @@ let regetData = async function(tag){
 //page end_cursor
 let nextPage = async function(tag, token, callback) {
   let url = 'https://www.instagram.com/explore/tags/' + encodeURIComponent(urlParser.tag(tag)) + '?__a=1&max_id=' + token
-  return await axios.get(url,{timeout: 5000})
+  return await axios.get(url,{timeout: 8000})
   .then(async function (res) {
     let json = res.data
     if(json.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page != false){
@@ -195,9 +197,10 @@ let updatePlace = async function () {
     let shortcode = await getplaceDB(null)
       if (shortcode) {
         var place = await digLocation(shortcode)
-      }
-      await updateDB(place, shortcode)
-      await setTimeout(() => updatePlace(), 3600)
+        await updateDB(place, shortcode)
+        await setTimeout(() => updatePlace(), 3600)
+      } 
+      
 }
 
 exports.tag = async function (tag) {

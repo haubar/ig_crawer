@@ -8,8 +8,8 @@ var log = function () {
 // igScrap.tag('matcha', function(err, result){
 // })
 
-// igcraw.tag('抹茶')
-igcraw.tag('抹茶控')
+igcraw.tag('抹茶')
+// igcraw.tag('抹茶控')
 
 //  igcraw.place()
 
