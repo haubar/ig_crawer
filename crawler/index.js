@@ -23,8 +23,8 @@ let normalize = async function (arr) {
     let item = new Data(origin.node)
     let shortcode = await getshortocdeDB(item.shortcode)
     // if (item.timestamp > time_point) {
-      if (shortcode) {
-        // await addshortcodeLog(item.shortcode)
+      if (!shortcode) {
+      // await addshortcodeLog(item.shortcode)
         list.push(item)
       }
     // }
@@ -59,7 +59,7 @@ let getshortocdeDB = async function(params){
      {"shortcode": params},
      {"shortcode": 1}
    ).then(
-     data => data.shortcode
+     data => data
    )
  }
 
@@ -135,7 +135,9 @@ let nextPage = async function(tag, token, callback) {
       var main_node = json.graphql.hashtag.edge_hashtag_to_media.edges
       var result = await normalize(main_node)
     }
-      if (result) await writeDB(result)
+      if (!!result) {
+        await writeDB(result)
+      }
       if (token != null) {
         await updatepageToken(token)
         await addtokenLog(token)
@@ -195,7 +197,7 @@ let updatePlace = async function () {
         var place = await digLocation(shortcode)
       }
       await updateDB(place, shortcode)
-      await setTimeout(() => updatePlace(), 4200)
+      await setTimeout(() => updatePlace(), 3600)
 }
 
 exports.tag = async function (tag) {
