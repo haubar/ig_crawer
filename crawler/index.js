@@ -51,8 +51,6 @@ let getplaceDB = async function(params){
     {"shortcode": 1}
   ).then(
     data =>  (data)?data.shortcode:'' 
-  ).catch(
-    console.log('not null shortcode')
   )
 }
 
@@ -82,11 +80,13 @@ let removeDB = async function(shortcode){
 
 //更新DB資料
 let updateDB = async function(data, shortcode){
-  await db.findOneAndUpdate(
-      { "shortcode": shortcode }, data
-    ).then(
-      console.log(' update data for shortcode - : '+ shortcode)
-  ) 
+  if(shortcode) {
+    await db.findOneAndUpdate(
+        { "shortcode": shortcode }, data
+      ).then(
+        console.log(' update data for shortcode - : '+ shortcode)
+    )
+  } 
 }
 
 let updatepageToken = async function(token){
@@ -158,8 +158,8 @@ let nextPage = async function(tag, token, callback) {
 }
 
 let digLocation = async function(shortcode, callback) {
-  let url = 'https://www.instagram.com/p/' + shortcode + '?__a=1'
-  return await axios.get(url,{timeout: 5000})
+  let url = 'https://www.instagram.com/p/' + shortcode + '/?__a=1'
+  return await axios.get(url,{timeout: 9000})
   .then(async function (res) {
       let json = res.data
       if(json.graphql.shortcode_media.location) {
@@ -180,7 +180,7 @@ let digLocation = async function(shortcode, callback) {
 
 let digCoordinate = async function(location, callback) {
   let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1'
-  return await axios.get(url,{timeout: 5000})
+  return await axios.get(url,{timeout: 9000})
   .then(async function (res) {
       let json = res.data
       await console.info('位置名稱',json.graphql.location.name)
@@ -197,9 +197,9 @@ let updatePlace = async function () {
     let shortcode = await getplaceDB(null)
       if (shortcode) {
         var place = await digLocation(shortcode)
-        await updateDB(place, shortcode)
-        await setTimeout(() => updatePlace(), 3600)
       } 
+      await updateDB(place, shortcode)
+      await setTimeout(() => updatePlace(), 3600)
       
 }
 
