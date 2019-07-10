@@ -1,5 +1,5 @@
 .DS_Store
-yarn.lock
+*.lock
 node_modules/
 .env
 *.txt
