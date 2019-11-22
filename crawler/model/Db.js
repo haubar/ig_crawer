@@ -24,15 +24,8 @@ var schema = mongoose.Schema({
 //設定連線，設定mongoose的Deprecation Warnings
 mongoose.connect( process.env.DB_HOST ,{useNewUrlParser:true, useFindAndModify: false, useCreateIndex: true})
 // var db_ct = mongoose.model('match_devs_copys', schema)
-var db_ct = mongoose.model('matchakon', schema)
+var db_ct = mongoose.model(process.env.DB_DATABASE, schema)
 // var db_ct = mongoose.model('aatest', schema)
 // var db_ct = mongoose.model('matcha', schema)
 
 module.exports = db_ct
-
-
-// var Cat = require('db');
-// var peter = new Cat();
-
-
-
