@@ -179,12 +179,13 @@ let digLocation = async function(shortcode, callback) {
 }
 
 let digCoordinate = async function(location, callback) {
-  let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1'
+  // let url = 'https://www.instagram.com/explore/locations/' + location + '?__a=1'
+  let url = 'https://www.instagram.com/graphql/query/?query_hash='+process.env.IG_QUERY_HASH+'&variables={"id":'+location+',"first":12,"after":"XXXXXXXX"}'
   return await axios.get(url,{timeout: 9000})
   .then(async function (res) {
-      let json = res.data
-      await console.info('位置名稱',json.graphql.location.name)
-      let data = await locate(json.graphql.location)
+      let json = res.data.data
+      console.info('位置名稱',json.location.name)
+      let data = await locate(json.location)
       return data
   })
   .catch(async function (err) {
